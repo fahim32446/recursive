@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
@@ -10,77 +10,114 @@ const getRandomColor = () => {
 };
 
 const App = () => {
-  const [box, setBox] = useState([
-    { id: 1, verticalChild: [], color: getRandomColor() },
+  const [boxes, setBoxes] = useState([
+    { id: 1, verticalChildren: [], color: getRandomColor() },
   ]);
-  const handleVertical = (id) => {
-    setBox((prevBoxes) => {
-      const updatedBoxes = prevBoxes.map((box) => {
-        if (box.id === id) {
-          const nextSerial = box.verticalChild?.length + 1;
-          return {
-            ...box,
-            verticalChild: [
-              ...box.verticalChild,
-              {
-                id: nextSerial,
-                direction: 'vertical',
-                horizontalChildren: [],
-                color: getRandomColor(),
-              },
-            ],
-          };
-        }
-        return box;
-      });
 
-      return updatedBoxes;
-    });
+  const handleVertical = (id) => {
+    setBoxes((prevBoxes) =>
+      prevBoxes.map((box) =>
+        box.id === id
+          ? {
+              ...box,
+              verticalChildren: [
+                ...box.verticalChildren,
+                {
+                  id: box.verticalChildren.length + 1,
+                  direction: 'vertical',
+                  horizontalChildren: [],
+                  color: getRandomColor(),
+                },
+              ],
+            }
+          : box
+      )
+    );
   };
 
   const handleHorizontal = () => {
-    setBox((prev) => [
-      ...prev,
+    setBoxes((prevBoxes) => [
+      ...prevBoxes,
       {
-        id: prev.length + 1,
-        verticalChild: [],
+        id: prevBoxes.length + 1,
+        verticalChildren: [],
         color: getRandomColor(),
       },
     ]);
   };
 
-  const handleHorizontalChild = (mainId, verticalChildID) => {
-    setBox((prevBoxes) => {
-      const updatedBoxes = prevBoxes.map((box) => {
-        if (box.id === mainId) {
-          const updatedVerticalChildren = box.verticalChild.map((child) => {
-            if (child.id === verticalChildID) {
-              const nextSerial = child.horizontalChildren.length + 1;
-              return {
-                ...child,
-                horizontalChildren: [
-                  ...child.horizontalChildren,
-                  {
-                    id: nextSerial,
-                    direction: 'horizontal',
-                    color: getRandomColor(),
-                  },
-                ],
-              };
+  const handleHorizontalChild = (mainId, verticalChildId) => {
+    setBoxes((prevBoxes) =>
+      prevBoxes.map((box) =>
+        box.id === mainId
+          ? {
+              ...box,
+              verticalChildren: box.verticalChildren.map((child) =>
+                child.id === verticalChildId
+                  ? {
+                      ...child,
+                      horizontalChildren: [
+                        ...child.horizontalChildren,
+                        {
+                          id: child.horizontalChildren.length + 1,
+                          direction: 'horizontal',
+                          color: getRandomColor(),
+                        },
+                      ],
+                    }
+                  : child
+              ),
             }
-            return child;
-          });
-          return {
-            ...box,
-            verticalChild: updatedVerticalChildren,
-          };
-        }
-        return box;
-      });
-      return updatedBoxes;
-    });
+          : box
+      )
+    );
   };
-  console.log(box);
+
+  const removeVertical = (mainId, verticalChildId) => {
+    setBoxes((prevBoxes) =>
+      prevBoxes.map((box) =>
+        box.id === mainId
+          ? {
+              ...box,
+              verticalChildren: box.verticalChildren.filter(
+                (child) => child.id !== verticalChildId
+              ),
+            }
+          : box
+      )
+    );
+  };
+
+  const removeHorizontal = (id) => {
+    setBoxes((prevBoxes) => prevBoxes.filter((box) => box.id !== id));
+  };
+
+  const removeHorizontalChild = (
+    mainId,
+    verticalChildId,
+    horizontalChildId
+  ) => {
+    setBoxes((prevBoxes) =>
+      prevBoxes.map((box) =>
+        box.id === mainId
+          ? {
+              ...box,
+              verticalChildren: box.verticalChildren.map((child) =>
+                child.id === verticalChildId
+                  ? {
+                      ...child,
+                      horizontalChildren: child.horizontalChildren.filter(
+                        (hChild) => hChild.id !== horizontalChildId
+                      ),
+                    }
+                  : child
+              ),
+            }
+          : box
+      )
+    );
+  };
+
   const containerStyle = {
     height: '100vh',
     display: 'flex',
@@ -89,50 +126,62 @@ const App = () => {
 
   return (
     <div style={containerStyle}>
-      {box.map((item, key) => (
+      {boxes.map((box) => (
         <div
-          key={key}
+          key={box.id}
           style={{
-            height: `${100 / 2}vh`,
+            height: '50vh',
             border: '1px solid black',
             marginBottom: '10px',
-            background: item.color,
+            background: box.color,
           }}
           className='flex p-1 justify-center items-center'
         >
-          {item.verticalChild.length > 0 ? (
-            item.verticalChild.map((VItem, VIndex) => (
+          {box.verticalChildren.length > 0 ? (
+            box.verticalChildren.map((vChild) => (
               <div
-                key={VIndex}
+                key={vChild.id}
                 style={{
-                  height: `${100}%`,
+                  height: '100%',
                   border: '1px solid black',
                   marginBottom: '10px',
                 }}
                 className='h-full w-full overflow-auto'
               >
-                {VItem?.horizontalChildren?.length > 0 ? (
-                  VItem.horizontalChildren?.map((HChild, Hindex) => (
+                {vChild.horizontalChildren.length > 0 ? (
+                  vChild.horizontalChildren.map((hChild) => (
                     <div
-                      style={{ background: HChild.color }}
-                      key={Hindex}
+                      style={{ background: hChild.color }}
+                      key={hChild.id}
                       className='bg-state-500 h-fit py-10 w-full flex flex-row border justify-center items-center'
                     >
                       <div>
-                        <div className='flex gap-3 '>
+                        <div className='flex gap-3'>
                           <button
-                            onClick={() => handleVertical(item.id)}
+                            onClick={() => handleVertical(box.id)}
                             className='px-3 border rounded'
                           >
                             V
                           </button>
                           <button
                             onClick={() =>
-                              handleHorizontalChild(item.id, VItem.id)
+                              handleHorizontalChild(box.id, vChild.id)
                             }
                             className='px-3 border rounded'
                           >
                             H
+                          </button>
+                          <button
+                            onClick={() =>
+                              removeHorizontalChild(
+                                box.id,
+                                vChild.id,
+                                hChild.id
+                              )
+                            }
+                            className='px-3 border rounded bg-red-500 text-white'
+                          >
+                            Remove H
                           </button>
                         </div>
                       </div>
@@ -140,24 +189,30 @@ const App = () => {
                   ))
                 ) : (
                   <div
-                    style={{ background: VItem.color }}
+                    style={{ background: vChild.color }}
                     className='bg-state-500 h-full w-full flex border justify-center items-center'
                   >
                     <div>
                       <div className='flex gap-3'>
                         <button
-                          onClick={() => handleVertical(item.id)}
+                          onClick={() => handleVertical(box.id)}
                           className='px-3 border rounded'
                         >
                           V
                         </button>
                         <button
                           onClick={() =>
-                            handleHorizontalChild(item.id, VItem.id)
+                            handleHorizontalChild(box.id, vChild.id)
                           }
                           className='px-3 border rounded'
                         >
                           H
+                        </button>
+                        <button
+                          onClick={() => removeVertical(box.id, vChild.id)}
+                          className='px-3 border rounded bg-red-500 text-white'
+                        >
+                          Remove V
                         </button>
                       </div>
                     </div>
@@ -169,7 +224,7 @@ const App = () => {
             <div>
               <div className='flex gap-3'>
                 <button
-                  onClick={() => handleVertical(item.id)}
+                  onClick={() => handleVertical(box.id)}
                   className='px-3 border rounded'
                 >
                   V
@@ -179,6 +234,12 @@ const App = () => {
                   className='px-3 border rounded'
                 >
                   H
+                </button>
+                <button
+                  onClick={() => removeHorizontal(box.id)}
+                  className='px-3 border rounded bg-red-500 text-white'
+                >
+                  Remove H
                 </button>
               </div>
             </div>
